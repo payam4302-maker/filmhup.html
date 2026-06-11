@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Film Hop - 100 Sections</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Tahoma, sans-serif; }
+        body { background: #0f2027; color: #fff; min-height: 100vh; }
+
+        /* صفحه اصلی - فقط 10 کارت */
+        #main-menu { padding: 20px; }
+        .menu-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; max-width: 800px; margin: 0 auto; }
+        .card-btn {
+            background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 10px; padding: 15px; text-align: center; font-size: 18px; font-weight: bold;
+            cursor: pointer; transition: 0.3s;
+        }
+        .card-btn:hover { background: rgba(255,255,255,0.2); transform: scale(1.05); border-color: #f093fb; }
+
+        /* محتوای داخلی */
+        #content-area { display: none; padding: 20px; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        header h1 { font-size: 22px; background: linear-gradient(45deg, #ff6b6b, #f093fb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .search-box input { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 20px; padding: 8px 15px; color: #fff; outline: none; }
+        .search-box input:focus { border-color: #667eea; }
+
+        .category-section { margin-bottom: 30px; }
+        .category-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #f093fb; border-right: 4px solid #667eea; padding-right: 10px; }
+        .category-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .movie-card {
+            position: relative; aspect-ratio: 2/3; border-radius: 10px; overflow: hidden;
+            cursor: pointer; background: #000; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+        }
+        .movie-card img { width: 100%; height: 100%; object-fit: cover; }
+        .movie-card .info { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px; background: linear-gradient(to top, rgba(0,0,0,0.9), transparent); }
+        .movie-card .info h3 { font-size: 14px; }
+        .movie-card .info p { font-size: 12px; color: #ddd; }
+
+        /* پاپ‌آپ جنسیت */
+        .gender-popup {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8); backdrop-filter: blur(10px);
+            display: none; align-items: center; justify-content: center; z-index: 5000;
+        }
+        .gender-popup.active { display: flex; }
+        .gender-popup-content {
+            background: #1a2a3a; border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px; padding: 40px; text-align: center; max-width: 400px; width: 90%;
+        }
+        .gender-popup-content h2 { font-size: 24px; margin-bottom: 30px; }
+        .gender-popup-content button {
+            padding: 15px 40px; border: 1px solid rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.05); color: #fff; border-radius: 50px;
+            font-size: 16px; cursor: pointer; margin: 0 10px; transition: 0.3s;
+        }
+        .gender-popup-content button:hover { background: rgba(255,255,255,0.15); transform: translateY(-3px); }
+
+        /* صفحه پخش فیلم */
+        #video-page {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #0f2027; z-index: 3000; display: none; flex-direction: column;
+        }
+        #video-page.active { display: flex; }
+        .video-header { padding: 15px; display: flex; align-items: center; gap: 15px; background: rgba(0,0,0,0.5); }
+        .back-btn { background: rgba(255,255,255,0.2); border: none; color: #fff; width: 40px; height: 40px; border-radius: 50%; font-size: 18px; cursor: pointer; }
+        .video-container { width: 100%; background: #000; }
+        .video-container video { width: 100%; height: auto; aspect-ratio: 16/9; }
+        .video-info { padding: 20px; }
+        .video-info h2 { font-size: 22px; color: #667eea; }
+        .video-info p { color: #ccc; margin-top: 10px; }
+
+        /* بخش نظرات */
+        .comments-section {
+            background: rgba(0,0,0,0.3); padding: 20px; border-top: 1px solid rgba(255,255,255,0.1);
+            flex: 1; display: flex; flex-direction: column;
+        }
+        .comments-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #f093fb; }
+        .comments-list {
+            flex: 1; overflow-y: auto; margin-bottom: 15px; padding-bottom: 10px;
+            max-height: 300px;
+        }
+        .comment-item {
+            background: rgba(255,255,255,0.05); border-radius: 8px; padding: 10px;
+            margin-bottom: 10px; border-right: 3px solid #667eea;
+        }
+        .comment-user { font-size: 14px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        .comment-text { font-size: 14px; color: #ddd; line-height: 1.4; }
+        .comment-input-area { display: flex; gap: 10px; margin-top: auto; }
+        .comment-input {
+            flex: 1; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 20px; padding: 10px 15px; color: #fff; outline: none;
+        }
+        .comment-input:focus { border-color: #667eea; }
+        .send-btn {
+            background: linear-gradient(45deg, #667eea, #f093fb); border: none;
+            color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 14px;
+            cursor: pointer; font-weight: bold; transition: 0.2s;
+        }
+        .send-btn:hover { transform: scale(1.05); }
+
+        @media (max-width: 768px) {
+            .menu-grid { grid-template-columns: repeat(3, 1fr); }
+            .category-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- پاپ‌آپ جنسیت -->
+    <div id="genderPopup" class="gender-popup">
+        <div class="gender-popup-content">
+            <h2>لطفاً جنسیت خود را انتخاب کنید</h2>
+            <button onclick="selectGender('male')">مرد</button>
+            <button onclick="selectGender('female')">زن</button>
+        </div>
+    </div>
+
+    <!-- صفحه اصلی (فقط 10 کارت) -->
+    <div id="main-menu">
+        <div class="menu-grid" id="cardsContainer"></div>
+    </div>
+
+    <!-- محتوای داخلی -->
+    <div id="content-area">
+        <header>
+            <h1 id="sectionTitle">عنوان بخش</h1>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="جستجو (مثلا: بخش 50 یا نام فیلم)..." oninput="searchMovies()">
+            </div>
+        </header>
+        <div id="galleryContainer"></div>
+    </div>
+
+    <!-- صفحه پخش فیلم -->
+    <div id="video-page">
+        <div class="video-header">
+            <button class="back-btn" onclick="goBack()">←</button>
+            <span style="font-weight: bold;">پخش فیلم</span>
+        </div>
+        <div class="video-container">
+            <video id="mainVideo" controls>
+                <source src="" type="video/mp4">
+            </video>
+        </div>
+        <div class="video-info">
+            <h2 id="modalTitle">عنوان فیلم</h2>
+            <p id="modalDesc">توضیحات</p>
+        </div>
+        
+        <!-- بخش نظرات -->
+        <div class="comments-section">
+            <div class="comments-header">نظرات کاربران</div>
+            <div class="comments-list" id="commentsList"></div>
+            <div class="comment-input-area">
+                <input type="text" class="comment-input" id="commentInput" placeholder="نظر خود را بنویسید...">
+                <button class="send-btn" onclick="addComment()">ارسال</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const sectionNames = ["اکشن", "کمدی", "درام", "ترسناک", "علمی تخیلی", "مستند", "انیمیشن", "کلاسیک", "سریال", "جدیدترین‌ها"];
+        const userNames = ["علی", "سارا", "امیر", "مریم", "رضا", "زهرا", "کاربر ۱۲۳", "کاربر ۴۵۶"];
+        const defaultComments = ["فیلم خیلی خوبی بود!", "پایان‌بندی عجیبی داشت.", "بازیگر نقش اول عالی بود.", "صداگذاری خوب نبود.", "حتما ببینید!", "کمی طولانی بود ولی جذاب."];
+        
+        let userGender = null;
+        let pendingFilm = null;
+        let currentSectionIndex = null;
+        let currentComments = [];
+
+        // تولید فیلم‌های تصادفی
+        function generateFilms(count) {
+            const films = [];
+            for (let i = 1; i <= count; i++) {
+                const year = 1380 + Math.floor(Math.random() * 24);
+                const seed = i + Math.floor(Math.random() * 1000);
+                films.push({
+                    title: `فیلم شماره ${i}`,
+                    year: year,
+                    img: `https://picsum.photos/seed/${seed}/400/600`,
+                    video: "https://www.w3schools.com/html/mov_bbb.mp4",
+                    desc: `این فیلم شماره ${i} در سال ${year} ساخته شده است.`
+                });
+            }
+            return films;
+        }
+
+        // ساخت 100 بخش (در حافظه)
+        const allSectionsData = [];
+        for(let i=1; i<=100; i++) {
+            const sectionData = [];
+            for(let j=0; j<10; j++) {
+                sectionData.push({ name: sectionNames[j], films: generateFilms(100) });
+            }
+            allSectionsData.push(sectionData);
+        }
+
+        // نمایش فقط 10 کارت اول در صفحه اصلی
+        function renderCards() {
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+            // فقط 10 کارت اول (بخش 1 تا 10)
+            for(let i=1; i<=10; i++) {
+                const card = document.createElement('div');
+                card.className = 'card-btn';
+                card.textContent = i;
+                card.onclick = () => loadSection(i-1);
+                container.appendChild(card);
+            }
+        }
+
+        function loadSection(index) {
+            currentSectionIndex = index;
+            document.getElementById('main-menu').style.display = 'none';
+            document.getElementById('content-area').style.display = 'block';
+            document.getElementById('sectionTitle').textContent = `بخش ${index + 1}`;
+            renderGallery(allSectionsData[index]);
+        }
+
+        function renderGallery(data) {
+            const container = document.getElementById('galleryContainer');
+            container.innerHTML = '';
+            data.forEach((cat, index) => {
+                const section = document.createElement('div');
+                section.className = 'category-section';
+                const title = document.createElement('div');
+                title.className = 'category-title';
+                title.textContent = cat.name;
+                const grid = document.createElement('div');
+                grid.className = 'category-grid';
+                
+                cat.films.forEach(film => {
+                    const card = document.createElement('div');
+                    card.className = 'movie-card';
+                    card.innerHTML = `
+                        <img src="${film.img}" alt="${film.title}">
+                        <div class="info"><h3>${film.title}</h3><p>${film.year}</p></div>
+                    `;
+                    card.onclick = () => showGenderPopup(film);
+                    grid.appendChild(card);
+                });
+                
+                section.appendChild(title);
+                section.appendChild(grid);
+                container.appendChild(section);
+            });
+        }
+
+        // پاپ‌آپ جنسیت
+        function showGenderPopup(film) {
+            pendingFilm = film;
+            document.getElementById('genderPopup').classList.add('active');
+        }
+
+        function selectGender(gender) {
+            userGender = gender;
+            document.getElementById('genderPopup').classList.remove('active');
+            if (pendingFilm) {
+                openVideo(pendingFilm);
+                pendingFilm = null;
+            }
+        }
+
+        // پخش فیلم
+        function openVideo(film) {
+            document.getElementById('mainVideo').src = film.video;
+            document.getElementById('modalTitle').textContent = film.title;
+            document.getElementById('modalDesc').textContent = film.desc;
+            document.getElementById('video-page').classList.add('active');
+            document.getElementById('mainVideo').play();
+            
+            currentComments = [...defaultComments];
+            renderComments();
+        }
+
+        function goBack() {
+            document.getElementById('video-page').classList.remove('active');
+            document.getElementById('mainVideo').pause();
+            document.getElementById('mainVideo').src = "";
+        }
+
+        // --- سیستم نظرات ---
+        function addComment() {
+            const input = document.getElementById('commentInput');
+            const text = input.value.trim();
+            if (!text) return;
+
+            const randomUser = userNames[Math.floor(Math.random() * userNames.length)];
+            const now = new Date();
+            const timeString = now.getHours() + ':' + (now.getMinutes()<10?'0':'') + now.getMinutes();
+
+            currentComments.push({
+                user: randomUser,
+                text: text,
+                time: timeString
+            });
+
+            input.value = '';
+            renderComments();
+            const list = document.getElementById('commentsList');
+            list.scrollTop = list.scrollHeight;
+        }
+
+        function renderComments() {
+            const list = document.getElementById('commentsList');
+            list.innerHTML = '';
+            const displayComments = currentComments.slice(-50).reverse();
+
+            displayComments.forEach(comment => {
+                const div = document.createElement('div');
+                div.className = 'comment-item';
+                div.innerHTML = `
+                    <div class="comment-user">${comment.user}</div>
+                    <div class="comment-text">${comment.text}</div>
+                    <div style="font-size:11px; color:#888; margin-top:5px; text-align:left;">${comment.time}</div>
+                `;
+                list.appendChild(div);
+            });
+        }
+
+        // جستجو (برای بخش‌های 11 تا 100)
+        function searchMovies() {
+            const input = document.getElementById('searchInput').value.toLowerCase().trim();
+            const container = document.getElementById('galleryContainer');
+            container.innerHTML = '';
+
+            if (!input) {
+                container.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">لطفاً نام فیلم یا شماره بخش را جستجو کنید.</div>';
+                return;
+            }
+
+            // اگر کاربر نوشت "بخش 50"
+            if (input.startsWith('بخش')) {
+                const match = input.match(/بخش\s+(\d+)/);
+                if (match) {
+                    const sectionNum = parseInt(match[1]);
+                    if (sectionNum >= 1 && sectionNum <= 100) {
+                        loadSection(sectionNum - 1);
+                        return;
+                    } else {
+                        container.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">بخش مورد نظر وجود ندارد (۱ تا ۱۰۰).</div>';
+                        return;
+                    }
+                }
+            }
+
+            // جستجوی نام فیلم در تمام بخش‌ها
+            let found = false;
+            for(let i=0; i<100; i++) {
+                const sectionData = allSectionsData[i];
+                sectionData.forEach((cat, catIndex) => {
+                    const matchingFilms = cat.films.filter(f => f.title.toLowerCase().includes(input));
+                    if (matchingFilms.length > 0) {
+                        found = true;
+                        const section = document.createElement('div');
+                        section.className = 'category-section';
+                        const title = document.createElement('div');
+                        title.className = 'category-title';
+                        title.textContent = `بخش ${i+1} - ${cat.name} (${matchingFilms.length} نتیجه)`;
+                        const grid = document.createElement('div');
+                        grid.className = 'category-grid';
+                        matchingFilms.forEach(film => {
+                            const card = document.createElement('div');
+                            card.className = 'movie-card';
+                            card.innerHTML = `
+                                <img src="${film.img}" alt="${film.title}">
+                                <div class="info"><h3>${film.title}</h3><p>${film.year}</p></div>
+                            `;
+                            card.onclick = () => showGenderPopup(film);
+                            grid.appendChild(card);
+                        });
+                        section.appendChild(title);
+                        section.appendChild(grid);
+                        container.appendChild(section);
+                    }
+                });
+            }
+            if (!found) container.innerHTML = '<div style="text-align:center; padding:50px; color:#aaa;">هیچ فیلمی پیدا نشد.</div>';
+        }
+
+        // شروع برنامه
+        renderCards();
+    </script>
+</body>
+</html>
